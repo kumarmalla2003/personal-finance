@@ -1,0 +1,441 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER & AUTHENTICATION
+// ==========================================
+
+model User {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  passwordHash         String?
+  name                 String?
+  image                String?
+  emailVerified        DateTime?
+  currency             String    @default("USD")
+  financialHealthScore Int?
+  preferences          Json?     // Theme, notifications, etc.
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relations
+  accounts       Account[]
+  sessions       Session[]
+  incomeSources  IncomeSource[]
+  transactions   Transaction[]
+  budgets        Budget[]
+  savingsGoals   SavingsGoal[]
+  assets         Asset[]
+  liabilities    Liability[]
+  insurances     Insurance[]
+  progress       EducationProgress[]
+  badges         UserBadge[]
+  categories     ExpenseCategory[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==========================================
+// INCOME MANAGEMENT
+// ==========================================
+
+enum IncomeType {
+  SALARY
+  FREELANCE
+  BUSINESS
+  RENTAL
+  DIVIDEND
+  INTEREST
+  COMMISSION
+  BONUS
+  OTHER
+}
+
+enum Frequency {
+  ONE_TIME
+  DAILY
+  WEEKLY
+  BI_WEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUALLY
+  ANNUALLY
+}
+
+model IncomeSource {
+  id          String     @id @default(cuid())
+  userId      String
+  name        String
+  type        IncomeType
+  amount      Decimal    @db.Decimal(12, 2)
+  frequency   Frequency
+  isActive    Boolean    @default(true)
+  isTaxable   Boolean    @default(true)
+  startDate   DateTime   @default(now())
+  endDate     DateTime?
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId])
+}
+
+// ==========================================
+// EXPENSE & CATEGORY MANAGEMENT
+// ==========================================
+
+enum CategoryType {
+  ESSENTIAL
+  DISCRETIONARY
+}
+
+model ExpenseCategory {
+  id          String       @id @default(cuid())
+  userId      String?      // null for system defaults
+  name        String
+  type        CategoryType
+  icon        String?
+  color       String?
+  budgetLimit Decimal?     @db.Decimal(12, 2)
+  isDefault   Boolean      @default(false)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@index([userId])
+}
+
+// ==========================================
+// TRANSACTIONS
+// ==========================================
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model Transaction {
+  id              String          @id @default(cuid())
+  userId          String
+  type            TransactionType
+  amount          Decimal         @db.Decimal(12, 2)
+  date            DateTime
+  description     String?
+  merchant        String?
+  isRecurring     Boolean         @default(false)
+  recurringDay    Int?            // Day of month for recurring
+  
+  // Relations
+  categoryId      String?
+  incomeSourceId  String?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  incomeSource IncomeSource?    @relation(fields: [incomeSourceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([categoryId])
+}
+
+// ==========================================
+// BUDGETING
+// ==========================================
+
+model Budget {
+  id             String   @id @default(cuid())
+  userId         String
+  categoryId     String
+  month          Int      // 1-12
+  year           Int
+  plannedAmount  Decimal  @db.Decimal(12, 2)
+  actualAmount   Decimal  @default(0) @db.Decimal(12, 2)
+  rolloverAmount Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId, month, year])
+}
+
+// ==========================================
+// SAVINGS GOALS
+// ==========================================
+
+enum GoalPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum GoalStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+model SavingsGoal {
+  id                    String       @id @default(cuid())
+  userId                String
+  name                  String
+  description           String?
+  targetAmount          Decimal      @db.Decimal(12, 2)
+  currentAmount         Decimal      @default(0) @db.Decimal(12, 2)
+  priority              GoalPriority @default(MEDIUM)
+  status                GoalStatus   @default(ACTIVE)
+  deadline              DateTime?
+  icon                  String?
+  color                 String?
+  autoContribute        Boolean      @default(false)
+  contributionAmount    Decimal?     @db.Decimal(12, 2)
+  contributionFrequency Frequency?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==========================================
+// INVESTMENTS / ASSETS
+// ==========================================
+
+enum AssetType {
+  STOCK
+  BOND
+  MUTUAL_FUND
+  ETF
+  REAL_ESTATE
+  CRYPTO
+  COMMODITY
+  CASH
+  OTHER
+}
+
+model Asset {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  type          AssetType
+  ticker        String?   // For stocks/ETFs
+  quantity      Decimal   @db.Decimal(18, 8)
+  purchasePrice Decimal   @db.Decimal(12, 2)
+  currentPrice  Decimal   @db.Decimal(12, 2)
+  purchaseDate  DateTime
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==========================================
+// DEBT / LIABILITIES
+// ==========================================
+
+enum LiabilityType {
+  MORTGAGE
+  AUTO_LOAN
+  STUDENT_LOAN
+  PERSONAL_LOAN
+  CREDIT_CARD
+  MEDICAL_DEBT
+  OTHER
+}
+
+model Liability {
+  id              String        @id @default(cuid())
+  userId          String
+  name            String
+  type            LiabilityType
+  principal       Decimal       @db.Decimal(12, 2)
+  currentBalance  Decimal       @db.Decimal(12, 2)
+  interestRate    Decimal       @db.Decimal(5, 2) // e.g., 5.25%
+  minimumPayment  Decimal       @db.Decimal(12, 2)
+  dueDay          Int           // Day of month
+  startDate       DateTime
+  endDate         DateTime?
+  isPaidOff       Boolean       @default(false)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==========================================
+// INSURANCE
+// ==========================================
+
+enum InsuranceType {
+  HEALTH
+  LIFE
+  DISABILITY
+  HOME
+  AUTO
+  UMBRELLA
+  TRAVEL
+  PET
+  OTHER
+}
+
+model Insurance {
+  id             String        @id @default(cuid())
+  userId         String
+  provider       String
+  type           InsuranceType
+  policyNumber   String?
+  premium        Decimal       @db.Decimal(12, 2)
+  premiumFreq    Frequency     @default(MONTHLY)
+  coverageAmount Decimal       @db.Decimal(12, 2)
+  deductible     Decimal?      @db.Decimal(12, 2)
+  startDate      DateTime
+  renewalDate    DateTime?
+  isActive       Boolean       @default(true)
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==========================================
+// EDUCATION & GAMIFICATION
+// ==========================================
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+model EducationModule {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  title       String
+  description String
+  content     String     @db.Text
+  domain      String     // income, budgeting, investing, etc.
+  difficulty  Difficulty @default(BEGINNER)
+  duration    Int        // in minutes
+  order       Int
+  isPublished Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  progress EducationProgress[]
+  quizzes  Quiz[]
+}
+
+model EducationProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  moduleId    String
+  isCompleted Boolean  @default(false)
+  quizScore   Int?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module EducationModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleId])
+}
+
+model Quiz {
+  id        String   @id @default(cuid())
+  moduleId  String
+  questions Json     // Array of { question, options, correctIndex }
+  createdAt DateTime @default(now())
+
+  module EducationModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  icon        String
+  criteria    String   // Description of how to earn
+  createdAt   DateTime @default(now())
+
+  users UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+}

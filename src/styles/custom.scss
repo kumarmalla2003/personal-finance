@@ -1,0 +1,288 @@
+// Custom Bootstrap SCSS configuration for FinEdge
+// Import this file in your layout
+
+// 1. Custom Variables (before importing Bootstrap)
+// Primary: Trust/Stability (Blue tones)
+// Secondary: Growth/Success (Green tones)
+
+$primary: #2563eb;
+$secondary: #10b981;
+$success: #22c55e;
+$info: #0ea5e9;
+$warning: #f59e0b;
+$danger: #ef4444;
+
+// Custom theme colors for financial app
+$net-worth-positive: #10b981;
+$net-worth-negative: #ef4444;
+$income-color: #22c55e;
+$expense-color: #f43f5e;
+$savings-color: #8b5cf6;
+$investment-color: #0ea5e9;
+$debt-color: #f97316;
+
+// Typography
+$font-family-sans-serif: "Inter", system-ui, -apple-system, sans-serif;
+$font-size-base: 1rem;
+$headings-font-weight: 600;
+
+// Border radius for modern look
+$border-radius: 0.5rem;
+$border-radius-sm: 0.375rem;
+$border-radius-lg: 0.75rem;
+
+// Card styling
+$card-border-radius: 0.75rem;
+$card-cap-padding-y: 1rem;
+$card-cap-padding-x: 1.25rem;
+$card-spacer-y: 1.25rem;
+$card-spacer-x: 1.25rem;
+
+// Shadows
+$box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+$box-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+$box-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+// Enable negative margins (useful for layouts)
+$enable-negative-margins: true;
+
+// 2. Import Bootstrap
+@import "bootstrap/scss/bootstrap";
+
+// 3. Custom Components & Utilities
+
+// Financial Value Display
+.value-positive {
+  color: $net-worth-positive;
+}
+
+.value-negative {
+  color: $net-worth-negative;
+}
+
+.value-income {
+  color: $income-color;
+}
+
+.value-expense {
+  color: $expense-color;
+}
+
+.value-savings {
+  color: $savings-color;
+}
+
+.value-investment {
+  color: $investment-color;
+}
+
+.value-debt {
+  color: $debt-color;
+}
+
+// Dashboard Cards
+.dashboard-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $box-shadow-lg;
+  }
+}
+
+// Stat Card
+.stat-card {
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--bs-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .stat-change {
+    font-size: 0.75rem;
+    font-weight: 500;
+
+    &.positive {
+      color: $success;
+    }
+
+    &.negative {
+      color: $danger;
+    }
+  }
+}
+
+// Progress indicators for budgets/goals
+.budget-progress {
+  height: 0.5rem;
+  border-radius: 9999px;
+
+  .progress-bar {
+    transition: width 0.5s ease;
+
+    &.warning {
+      background-color: $warning;
+    }
+
+    &.danger {
+      background-color: $danger;
+    }
+  }
+}
+
+// Goal progress circle placeholder
+.goal-progress-ring {
+  width: 120px;
+  height: 120px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .percentage {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+}
+
+// Sidebar styling
+.sidebar {
+  width: 260px;
+  min-height: 100vh;
+  transition: width 0.3s ease;
+
+  &.collapsed {
+    width: 70px;
+  }
+
+  .nav-link {
+    padding: 0.75rem 1rem;
+    border-radius: $border-radius;
+    margin: 0.125rem 0.5rem;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    &.active {
+      background-color: rgba($primary, 0.1);
+      color: $primary;
+      font-weight: 500;
+    }
+  }
+}
+
+// Dark mode overrides
+[data-bs-theme="dark"] {
+  .sidebar .nav-link {
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    &.active {
+      background-color: rgba($primary, 0.2);
+    }
+  }
+
+  .dashboard-card {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+// Transaction list item
+.transaction-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--bs-border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .transaction-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// Loading skeleton
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bs-tertiary-bg) 25%,
+    var(--bs-secondary-bg) 50%,
+    var(--bs-tertiary-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: $border-radius;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// Currency display
+.currency {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+// Responsive utilities
+@include media-breakpoint-down(md) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    z-index: 1050;
+
+    &.show {
+      left: 0;
+    }
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+  }
+}
+
+// Chart container
+.chart-container {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+}
+
+// Badge earned animation
+@keyframes badge-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.badge-earned {
+  animation: badge-pop 0.5s ease forwards;
+}

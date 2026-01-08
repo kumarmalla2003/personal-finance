@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "FinEdge - Personal Finance Manager",
+  title: "Personal Finance",
   description: "Comprehensive personal finance management and education platform",
 };
 

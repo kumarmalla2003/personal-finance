@@ -1,3 +1,5 @@
+"use client";
+
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import {
   CashStack,
@@ -13,7 +15,7 @@ export default function Home() {
         <Row className="justify-content-center mb-5">
           <Col lg={8} className="text-center">
             <h1 className="display-4 fw-bold mb-3">
-              <span className="text-primary">Fin</span>Edge
+              <span className="text-primary">Personal</span> Finance
             </h1>
             <p className="lead text-muted mb-4">
               Your comprehensive personal finance management and education platform.
